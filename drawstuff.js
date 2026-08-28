@@ -153,43 +153,62 @@ function main() {
     // Get the canvas, context, and image data
     var canvas = document.getElementById("viewport"); 
     var context = canvas.getContext("2d");
-    var w = context.canvas.width; // as set in html
-    var h = context.canvas.height;  // as set in html
+    var w = context.canvas.width;
+    var h = context.canvas.height;
     var imagedata = context.createImageData(w,h);
- 
-    // Define a rectangle in 2D with colors and coords at corners
-    var ulc = new Color(0,255,255,255);     // upper left: cyan
-    var urc = new Color(255,0,255,255);      // upper right: magenta
-    var llc = new Color(255,255,0,255);      // lower left: yellow
-    var lrc = new Color(255,105,180,255);    // lower right: pink
-    var ulx = 50, uly = 50; // upper left corner position
-    var urx = 200, ury = 50; // upper right corner position
-    var llx = 50, lly = 150; // lower left corner position
-    var lrx = 200, lry = 150; // lower right corner position
-    
-    // set up the vertical interpolation
-    var lc = ulc.clone();  // left color
-    var rc = urc.clone();  // right color
-    var vDelta = 1 / (lly-uly); // norm'd vertical delta
-    var lcDelta = llc.clone().subtract(ulc).scale(vDelta); // left vert color delta
-    var rcDelta = lrc.clone().subtract(urc).scale(vDelta); // right vert color delta
-    
-    // set up the horizontal interpolation
-    var hc = new Color(); // horizontal color
-    var hDelta = 1 / (urx-ulx); // norm'd horizontal delta
-    var hcDelta = new Color(); // horizontal color delta
-    
-    // do the interpolation
-    for (var y=uly; y<=lly; y++) {
-        hc.copy(lc); // begin with the left color
-        hcDelta.copy(rc).subtract(lc).scale(hDelta); // reset horiz color delta
-        for (var x=ulx; x<=urx; x++) {
-            drawPixel(imagedata,x,y,hc);
-            hc.add(hcDelta);
-        } // end horizontal
-        lc.add(lcDelta);
-        rc.add(rcDelta);
-    } // end vertical
-    
-    context.putImageData(imagedata, 0, 0); // display the image in the context
+
+    // Define triangle colors
+    var topColor = new Color(255,105,180,255);      // pink
+    var leftColor = new Color(0,255,255,255);       // cyan
+    var rightColor = new Color(255,0,255,255);      // magenta
+
+    // Define triangle coordinates
+    var topX = 125, topY = 40;
+    var leftX = 50, leftY = 160;
+    var rightX = 200, rightY = 160;
+
+    // Draw the triangle one horizontal scanline at a time
+    for (var y = topY; y <= leftY; y++) {
+
+        // Calculate how far down the triangle we are
+        var t = (y - topY) / (leftY - topY);
+
+        // Find left and right x positions for this scanline
+        var xLeft = topX + (leftX - topX) * t;
+        var xRight = topX + (rightX - topX) * t;
+
+        // Interpolate color along the left edge
+        var leftEdgeColor = topColor.clone();
+        leftEdgeColor.add(
+            leftColor.clone().subtract(topColor).scale(t)
+        );
+
+        // Interpolate color along the right edge
+        var rightEdgeColor = topColor.clone();
+        rightEdgeColor.add(
+            rightColor.clone().subtract(topColor).scale(t)
+        );
+
+        // Horizontal interpolation
+        var xStart = Math.round(xLeft);
+        var xEnd = Math.round(xRight);
+
+        var horizontalDelta = 1 / (xEnd - xStart || 1);
+
+        var currentColor = leftEdgeColor.clone();
+
+        var colorDelta = rightEdgeColor.clone()
+            .subtract(leftEdgeColor)
+            .scale(horizontalDelta);
+
+        // Draw pixels across this scanline
+        for (var x = xStart; x <= xEnd; x++) {
+            drawPixel(imagedata, x, y, currentColor);
+            currentColor.add(colorDelta);
+        }
+    }
+
+    // Display the triangle
+    context.putImageData(imagedata, 0, 0);
 }
+```
