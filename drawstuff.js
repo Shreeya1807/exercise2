@@ -150,8 +150,6 @@ function drawPixel(imagedata,x,y,color) {
 
 function main() {
 
-    alert("TRIANGLE VERSION");
-
     // Get the canvas, context, and image data
     var canvas = document.getElementById("viewport"); 
     var context = canvas.getContext("2d");
@@ -159,42 +157,74 @@ function main() {
     var h = context.canvas.height;
     var imagedata = context.createImageData(w,h);
 
-    // Define triangle colors
+    // Four colors
     var topColor = new Color(255,105,180,255);      // pink
     var leftColor = new Color(0,255,255,255);       // cyan
     var rightColor = new Color(255,0,255,255);      // magenta
+    var centerColor = new Color(255,255,0,255);     // yellow
 
-    // Define triangle coordinates
+    // Triangle coordinates
     var topX = 125, topY = 40;
     var leftX = 50, leftY = 160;
     var rightX = 200, rightY = 160;
 
-    // Draw the triangle one horizontal scanline at a time
+    // Center point and center color
+    var centerX = 125;
+    var centerY = 100;
+
+    // Draw triangle one horizontal scanline at a time
     for (var y = topY; y <= leftY; y++) {
 
-        // Calculate how far down the triangle we are
         var t = (y - topY) / (leftY - topY);
 
-        // Find left and right x positions for this scanline
+        // Find the left and right boundaries of the triangle
         var xLeft = topX + (leftX - topX) * t;
         var xRight = topX + (rightX - topX) * t;
 
-        // Interpolate color along the left edge
-        var leftEdgeColor = topColor.clone();
-        leftEdgeColor.add(
-            leftColor.clone().subtract(topColor).scale(t)
-        );
-
-        // Interpolate color along the right edge
-        var rightEdgeColor = topColor.clone();
-        rightEdgeColor.add(
-            rightColor.clone().subtract(topColor).scale(t)
-        );
-
-        // Horizontal interpolation
         var xStart = Math.round(xLeft);
         var xEnd = Math.round(xRight);
 
+        // Determine colors on the left and right edges.
+        // Above the center: interpolate from pink to yellow.
+        // Below the center: interpolate from cyan/yellow to
+        // yellow/magenta.
+
+        if (y <= centerY) {
+
+            // Amount from top to center
+            var tc = (y - topY) / (centerY - topY);
+
+            // Left edge: pink -> yellow
+            var leftEdgeColor = topColor.clone();
+            leftEdgeColor.add(
+                centerColor.clone().subtract(topColor).scale(tc)
+            );
+
+            // Right edge: pink -> yellow
+            var rightEdgeColor = topColor.clone();
+            rightEdgeColor.add(
+                centerColor.clone().subtract(topColor).scale(tc)
+            );
+
+        } else {
+
+            // Amount from center to bottom
+            var tc = (y - centerY) / (leftY - centerY);
+
+            // Left edge: yellow -> cyan
+            var leftEdgeColor = centerColor.clone();
+            leftEdgeColor.add(
+                leftColor.clone().subtract(centerColor).scale(tc)
+            );
+
+            // Right edge: yellow -> magenta
+            var rightEdgeColor = centerColor.clone();
+            rightEdgeColor.add(
+                rightColor.clone().subtract(centerColor).scale(tc)
+            );
+        }
+
+        // Horizontal interpolation
         var horizontalDelta = 1 / (xEnd - xStart || 1);
 
         var currentColor = leftEdgeColor.clone();
@@ -203,7 +233,7 @@ function main() {
             .subtract(leftEdgeColor)
             .scale(horizontalDelta);
 
-        // Draw pixels across this scanline
+        // Draw pixels across the scanline
         for (var x = xStart; x <= xEnd; x++) {
             drawPixel(imagedata, x, y, currentColor);
             currentColor.add(colorDelta);
@@ -213,3 +243,4 @@ function main() {
     // Display the triangle
     context.putImageData(imagedata, 0, 0);
 }
+
