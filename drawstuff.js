@@ -160,7 +160,6 @@ function drawPixel(imagedata,x,y,color) {
     }
 }
 
-
 /* main -- here is where execution begins after window load */
 
 function main() {
@@ -183,129 +182,115 @@ function main() {
     var centerColor = new Color(255,255,0,255);     // yellow
 
 
-    // Triangle coordinates
+    // Triangle vertices
 
-    var topX = 256;
-    var topY = 60;
-
-    var leftX = 80;
-    var leftY = 420;
-
-    var rightX = 432;
-    var rightY = 420;
+    var topX = 256, topY = 60;
+    var leftX = 80, leftY = 420;
+    var rightX = 432, rightY = 420;
 
 
-    // Yellow center position
+    // Fourth color point in the center
 
-    var centerX = 256;
-    var centerY = 250;
+    var centerX = 256, centerY = 260;
 
 
-    // Draw triangle one horizontal scanline at a time
+    // Helper function for barycentric color interpolation
+    function interpolateTriangle(
+        px, py,
+        x1, y1, c1,
+        x2, y2, c2,
+        x3, y3, c3
+    ) {
+
+        var denominator =
+            ((y2 - y3) * (x1 - x3) +
+             (x3 - x2) * (y1 - y3));
+
+        if (denominator == 0)
+            return null;
+
+
+        var a =
+            ((y2 - y3) * (px - x3) +
+             (x3 - x2) * (py - y3)) / denominator;
+
+        var b =
+            ((y3 - y1) * (px - x3) +
+             (x1 - x3) * (py - y3)) / denominator;
+
+        var c = 1 - a - b;
+
+
+        // Point is outside this triangle
+        if (a < 0 || b < 0 || c < 0)
+            return null;
+
+
+        // Interpolate RGB values
+        var color = new Color();
+
+        color.r = a * c1.r + b * c2.r + c * c3.r;
+        color.g = a * c1.g + b * c2.g + c * c3.g;
+        color.b = a * c1.b + b * c2.b + c * c3.b;
+        color.a = 255;
+
+        return color;
+    }
+
+
+    // Go through every pixel in the canvas
 
     for (var y = topY; y <= leftY; y++) {
 
-        // How far down the triangle we are
-        var t = (y - topY) / (leftY - topY);
+        for (var x = leftX; x <= rightX; x++) {
+
+            var color = null;
 
 
-        // Find left and right boundaries
-        var xLeft = topX + (leftX - topX) * t;
-        var xRight = topX + (rightX - topX) * t;
+            // Triangle 1:
+            // TOP (pink) -> LEFT (cyan) -> CENTER (yellow)
 
-        var xStart = Math.round(xLeft);
-        var xEnd = Math.round(xRight);
-
-
-        // Interpolate the normal triangle colors
-        // along the left and right edges.
-
-        var leftEdgeColor = topColor.clone();
-
-        leftEdgeColor.add(
-            leftColor.clone()
-                .subtract(topColor)
-                .scale(t)
-        );
+            color = interpolateTriangle(
+                x, y,
+                topX, topY, topColor,
+                leftX, leftY, leftColor,
+                centerX, centerY, centerColor
+            );
 
 
-        var rightEdgeColor = topColor.clone();
+            // Triangle 2:
+            // TOP (pink) -> CENTER (yellow) -> RIGHT (magenta)
 
-        rightEdgeColor.add(
-            rightColor.clone()
-                .subtract(topColor)
-                .scale(t)
-        );
+            if (color == null) {
 
-
-        // Horizontal interpolation
-
-        var horizontalDelta = 1 / (xEnd - xStart || 1);
-
-        var currentColor = leftEdgeColor.clone();
-
-        var colorDelta = rightEdgeColor.clone()
-            .subtract(leftEdgeColor)
-            .scale(horizontalDelta);
-
-
-        // Draw pixels across the scanline
-
-        for (var x = xStart; x <= xEnd; x++) {
-
-            // Start with normal interpolated color
-            var pixelColor = currentColor.clone();
-
-
-            // Calculate distance from yellow center
-
-            var dx = x - centerX;
-            var dy = y - centerY;
-
-            var distance = Math.sqrt(dx * dx + dy * dy);
-
-
-            // Size of yellow region
-
-            var yellowRadius = 80;
-
-
-            // Yellow influence
-            var yellowInfluence = 1 - (distance / yellowRadius);
-
-            if (yellowInfluence < 0) {
-                yellowInfluence = 0;
+                color = interpolateTriangle(
+                    x, y,
+                    topX, topY, topColor,
+                    centerX, centerY, centerColor,
+                    rightX, rightY, rightColor
+                );
             }
 
 
-            // Make transition smooth
+            // Triangle 3:
+            // LEFT (cyan) -> CENTER (yellow) -> RIGHT (magenta)
 
-            yellowInfluence = yellowInfluence * yellowInfluence;
+            if (color == null) {
 
-
-            // Blend normal color toward yellow
-
-            pixelColor.scale(1 - yellowInfluence);
-
-            pixelColor.add(
-                centerColor.clone()
-                    .scale(yellowInfluence)
-            );
-
-
-            // Draw pixel
-
-            drawPixel(
-                imagedata,
-                x,
-                y,
-                pixelColor
-            );
+                color = interpolateTriangle(
+                    x, y,
+                    leftX, leftY, leftColor,
+                    centerX, centerY, centerColor,
+                    rightX, rightY, rightColor
+                );
+            }
 
 
-            // Move to next color
+            // Draw the pixel if it belongs to the triangle
 
-            currentColor.add(colorDelta);
+            if (color != null) {
+                drawPixel(imagedata, x, y, color);
+            }
         }
     }
 
