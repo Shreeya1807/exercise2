@@ -150,6 +150,8 @@ function drawPixel(imagedata,x,y,color) {
 
 function main() {
 
+    alert("TRIANGLE VERSION");
+
     // Get the canvas, context, and image data
     var canvas = document.getElementById("viewport"); 
     var context = canvas.getContext("2d");
@@ -211,4 +213,3 @@ function main() {
     // Display the triangle
     context.putImageData(imagedata, 0, 0);
 }
-```
