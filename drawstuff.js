@@ -158,10 +158,10 @@ function main() {
     var imagedata = context.createImageData(w,h);
  
     // Define a rectangle in 2D with colors and coords at corners
-    var ulc = new Color(255,0,0,255); // upper left corner color: red
-    var urc = new Color(0,255,0,255); // upper right corner color: green
-    var llc = new Color(0,0,255,255); // lower left corner color: blue
-    var lrc = new Color(0,0,0,255); // lower right corner color: black
+    var ulc = new Color(0,255,255,255);     // upper left: cyan
+    var urc = new Color(255,0,255,255);      // upper right: magenta
+    var llc = new Color(255,255,0,255);      // lower left: yellow
+    var lrc = new Color(255,105,180,255);    // lower right: pink
     var ulx = 50, uly = 50; // upper left corner position
     var urx = 200, ury = 50; // upper right corner position
     var llx = 50, lly = 150; // lower left corner position
